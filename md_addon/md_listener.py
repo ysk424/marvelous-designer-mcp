@@ -122,10 +122,9 @@ def serve_forever() -> None:
         srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         srv.bind((HOST, PORT))
         srv.listen(4)
-    except Exception:
-        print("[md-mcp] FAILED to bind:")
-        traceback.print_exc()
-        return
+    except OSError as e:
+        # Most commonly: port already in use (a previous listener is still running).
+        raise RuntimeError(f"[md-mcp] cannot bind {HOST}:{PORT} ({e}) -- is a listener already running?") from e
 
     print(f"[md-mcp] listening (blocking) on {HOST}:{PORT} -- MD GUI frozen until a client sends 'shutdown'")
     try:

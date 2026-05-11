@@ -43,15 +43,23 @@ uv sync
 
 ### 1. Start the listener inside Marvelous Designer
 
-Open `Plugins ▸ Python Editor` in MD, then paste **the whole contents of
-`scripts/md_start_listener.py`** and run it. (Pasting line-by-line into the editor
-can mangle indentation — copy the file in a text editor and paste it in one go.)
+`scripts/md_start_listener.py` starts a blocking socket listener on
+`127.0.0.1:7421`. **MD's GUI freezes while it runs — that's the ready state.**
+Stop it later with the `shutdown_listener` tool (or by closing MD).
 
-You should see `[md-mcp] listening (blocking) on 127.0.0.1:7421 ...` and MD will
-freeze. That's the ready state.
+**Option B — register it as a plugin (recommended).** In MD,
+`Plugins ▸ Plug-in Manager ▸ +ADD`, pick `scripts/md_start_listener.py`. From then
+on, one click on `Plugins ▸ Plug-in ▸ <its name>` starts the listener. No Python
+Editor needed.
 
-> If the path in `md_start_listener.py` doesn't match where you cloned the repo,
-> edit the `_ADDON_DIR` line at the top of that file.
+**Option A — paste into the Python Editor.** Open `Plugins ▸ Python Editor`, paste
+**the whole contents of `scripts/md_start_listener.py`**, run it. (Paste it in one
+go from a text editor — pasting line by line can mangle indentation.)
+
+Either way, status and errors are appended to `~\md_mcp_listener.log` (handy in
+plugin mode, where stdout may not be visible). If your clone isn't at the path
+hard-coded near the top of `md_start_listener.py`, edit the `_ADDON_DIR` fallback
+there — it auto-detects via `__file__` first, so usually you don't need to.
 
 ### 2. Start the MCP server
 
