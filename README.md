@@ -45,21 +45,28 @@ uv sync
 
 `scripts/md_start_listener.py` starts a blocking socket listener on
 `127.0.0.1:7421`. **MD's GUI freezes while it runs — that's the ready state.**
-Stop it later with the `shutdown_listener` tool (or by closing MD).
+Stop it later with the `shutdown_listener` tool (or by closing MD). See
+[Why does MD freeze?](#why-does-md-freeze-while-the-listener-runs) below.
 
-**Option B — register it as a plugin (recommended).** In MD,
-`Plugins ▸ Plug-in Manager ▸ +ADD`, pick `scripts/md_start_listener.py`. From then
-on, one click on `Plugins ▸ Plug-in ▸ <its name>` starts the listener. No Python
-Editor needed.
+**Option C — auto-register (one shot, recommended).** Run
+
+```powershell
+uv run python scripts/install_md_plugin.py
+```
+
+once. It writes the launcher into MD's `pluginSettings.json`, so on the next MD
+launch `Plugins ▸ Plug-in ▸ md_start_listener` is there waiting to be clicked.
+
+**Option B — register manually.** `Plugins ▸ Plug-in Manager ▸ +ADD`, pick
+`scripts/md_start_listener.py`. Same outcome as Option C, just hand-driven.
 
 **Option A — paste into the Python Editor.** Open `Plugins ▸ Python Editor`, paste
-**the whole contents of `scripts/md_start_listener.py`**, run it. (Paste it in one
-go from a text editor — pasting line by line can mangle indentation.)
+**the whole contents of `scripts/md_start_listener.py`**, run it. (Paste it in
+one go from a text editor — pasting line by line can mangle indentation.) Good
+for development; the editor's console shows prints.
 
 Either way, status and errors are appended to `~\md_mcp_listener.log` (handy in
-plugin mode, where stdout may not be visible). If your clone isn't at the path
-hard-coded near the top of `md_start_listener.py`, edit the `_ADDON_DIR` fallback
-there — it auto-detects via `__file__` first, so usually you don't need to.
+plugin mode, where stdout may not be visible).
 
 ### 2. Start the MCP server
 
@@ -112,6 +119,21 @@ tools to work.
 | `md_api(module, contains="")` | List a module's functions; substring-filtered. Discover signatures by calling a function with wrong args and reading the `TypeError`. |
 
 Anything not covered by a wrapper: use `execute_python` directly.
+
+## Why does MD freeze while the listener runs?
+
+MD's embedded Python (3.11) doesn't give CPU to background threads — a daemon
+thread spawned from a script is `is_alive() == True` but never actually
+executes. So the socket server has to run on whatever thread the Python Editor
+uses, which is MD's GUI thread. Empirically (verified live), API calls work
+fine while the GUI is frozen because they are synchronous main-thread calls;
+the GUI just doesn't repaint or accept input until the listener returns.
+
+The "right" fix is a C++ plugin (Qt-based, worker thread + queued connection
+back to the main thread). We built and tested that for CLO 3D's plugin model
+in `cpp_plugin/` — but **MD's loader scans only `.py` files** and ignores
+`.dll`s entirely (verified with a zero-dep probe DLL). The C++ code is kept
+for CLO 3D and for the day MD adds a `.dll` loader; see `cpp_plugin/README.md`.
 
 ## Caveats
 
