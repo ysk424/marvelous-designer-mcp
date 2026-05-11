@@ -12,13 +12,11 @@ class BridgeError(RuntimeError):
 
 def _recv_line(sock: socket.socket) -> bytes:
     buf = bytearray()
-    while True:
-        chunk = sock.recv(4096)
+    while b"\n" not in buf:
+        chunk = sock.recv(65536)
         if not chunk:
             raise BridgeError("connection closed before response")
         buf.extend(chunk)
-        if b"\n" in chunk:
-            break
     return bytes(buf).split(b"\n", 1)[0]
 
 
